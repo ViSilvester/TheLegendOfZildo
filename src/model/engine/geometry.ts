@@ -37,24 +37,17 @@ export class Rect {
 
     checkIntersect(r: Rect) {
         if (
-            (
-                (r.pos.x >= this.pos.x && r.pos.x <= this.pos.x + this.dim.x)
-                ||
-                (r.pos.x + r.dim.x >= this.pos.x && r.pos.x + r.dim.x <= this.pos.x + this.dim.x)
-            )
-            &&
-            (
-                (r.pos.y >= this.pos.y && r.pos.y <= this.pos.y + this.dim.y)
-                ||
-                (r.pos.y + r.dim.y >= this.pos.y && r.pos.y + r.dim.y <= this.pos.y + this.dim.y)
-            )
+            this.pos.x < r.pos.x && this.pos.x + this.dim.x < r.pos.x ||
+            this.pos.x > r.pos.x + r.dim.x && this.pos.x + this.dim.x > r.pos.x + r.dim.x ||
+            this.pos.y < r.pos.y && this.pos.y + this.dim.y < r.pos.y ||
+            this.pos.y > r.pos.y + r.dim.y && this.pos.y + this.dim.y > r.pos.y + r.dim.y
         ) {
 
-            return true;
+            return false;
 
         }
 
-        return false;
+        return true;
     }
 }
 

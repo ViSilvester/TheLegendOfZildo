@@ -15,8 +15,8 @@ export class SoundController {
     }
 
     async loadSounds() {
-        var buffer = await EzIO.loadArrayBufferFromUrl("../../assets/dungeon.mp3");
-        this.chip = await EzIO.loadArrayBufferFromUrl("../../assets/chip.it");
+        var buffer = await EzIO.loadArrayBufferFromUrl("./assets/dungeon.mp3");
+        this.chip = await EzIO.loadArrayBufferFromUrl("./assets/chip.it");
         //this.audioCtx.decodeAudioData(buffer, (data) => { this.dungeon = data });
     }
 
@@ -43,7 +43,7 @@ export class MusicPlayer {
         setTimeout(() => {
             console.log("config running")
             MusicPlayer.player = new ChiptuneJsPlayer(new ChiptuneJsConfig(-1, null, null, null));
-            this.loadURL("../../assets/chip.it")
+            this.loadURL("./assets/chip.it")
 
         }, 5000)
 

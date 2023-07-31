@@ -16,8 +16,8 @@ export class SoundController {
     }
     loadSounds() {
         return __awaiter(this, void 0, void 0, function* () {
-            var buffer = yield EzIO.loadArrayBufferFromUrl("../../assets/dungeon.mp3");
-            this.chip = yield EzIO.loadArrayBufferFromUrl("../../assets/chip.it");
+            var buffer = yield EzIO.loadArrayBufferFromUrl("./assets/dungeon.mp3");
+            this.chip = yield EzIO.loadArrayBufferFromUrl("./assets/chip.it");
             //this.audioCtx.decodeAudioData(buffer, (data) => { this.dungeon = data });
         });
     }
@@ -40,7 +40,7 @@ export class MusicPlayer {
         setTimeout(() => {
             console.log("config running");
             MusicPlayer.player = new ChiptuneJsPlayer(new ChiptuneJsConfig(-1, null, null, null));
-            this.loadURL("../../assets/chip.it");
+            this.loadURL("./assets/chip.it");
         }, 5000);
     }
     ;

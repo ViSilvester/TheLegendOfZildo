@@ -8,8 +8,7 @@ declare global {
 
 window.libopenmpt = Module;
 window.libopenmpt.locateFile = function (filename: string) {
-    console.log("/" + filename);
-    return "/" + filename;
+    return "./" + filename;
 }
 window.libopenmpt.onRuntimeInitialized = function () {
     setTimeout(
@@ -24,7 +23,7 @@ window.libopenmpt.onRuntimeInitialized = function () {
 var player: ChiptuneJsPlayer
 
 function onLoad(buffer: any) {
-    player.play(buffer);
+    //player.play(buffer);
     console.log(player.metadata())
 }
 

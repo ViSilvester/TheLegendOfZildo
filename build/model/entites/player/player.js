@@ -11,39 +11,58 @@ import { KeybordController } from "../../../controllers/keyboardController.js";
 import { EzIO } from "../../engine/EzIO.js";
 import { Entity } from "../../engine/entity.js";
 import { Rect, Vec2 } from "../../engine/geometry.js";
+import { Inventory } from "../../inventory/inventory.js";
+import { Particle } from "../../particle/particle.js";
 export class Player extends Entity {
     constructor(pos) {
         super();
         this.direction = "down";
         this.status = "idle";
+        this.attackArea = new Rect(new Vec2(0, 0), new Vec2(0, 0));
         // control variables
         this.animationTimer = 0;
         this.knockbackTimer = 0;
+        this.damageColldownTimer = 0;
         this.attackTimer = 0;
+        this.ExpToLvlUp = 50;
         this.attackColldown = false;
-        this.attackArea = new Rect(new Vec2(0, 0), new Vec2(0, 0));
         // status
-        this.life = 50;
-        this.attack = 5;
-        this.magic_attack = 2;
-        this.defence = 5;
-        this.inteligence = 5;
-        this.mana = 10;
+        this.life = 10;
+        this.magic = 10;
+        this.powerPoints = 3;
+        this.level = 1;
+        this.vitality = 1;
+        this.strength = 1;
+        this.magic_power = 1;
+        this.defence = 1;
+        this.inteligence = 1;
         this.experience = 0;
+        this.inventory = new Inventory();
         this.pos = pos;
-        this.dim = new Vec2(1, 1);
+        this.dim = new Vec2(0.5, 0.5);
+    }
+    get maxLife() {
+        return this.vitality * 10;
+    }
+    get maxMagic() {
+        return this.inteligence * 10;
     }
     create() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.sprite = yield EzIO.loadImageFromUrl("../../../../assets/char.png");
+            this.sprite = yield EzIO.loadImageFromUrl("./assets/char.png");
         });
     }
     update(game) {
         var newPos = new Vec2(this.pos.x, this.pos.y);
+        if (this.damageColldownTimer > 0) {
+            this.damageColldownTimer--;
+        }
         // checa se esta num satus transitivo
         if (this.status != "scrolling" &&
             this.status != "attack" &&
-            this.status != "knockback") {
+            this.status != "magic" &&
+            this.status != "knockback" &&
+            this.status != "enterDoor") {
             this.status = 'idle';
         }
         this.updateKeyboardInput(game, newPos);
@@ -53,16 +72,39 @@ export class Player extends Entity {
         else if (this.status == "attack") {
             this.updateAttack(game);
         }
+        else if (this.status == "magic") {
+            this.updateMagic(game);
+        }
         else if (this.status == "knockback") {
             this.updateKnockback(game, newPos);
         }
-        if (this.status != "knockback") {
-            this.checkEnemyCollison(game);
+        else if (this.status == "enterDoor") {
+            if (game.map.currentMap == game.map.overworldMap) {
+                game.map.enterDoor(game);
+                this.pos.x = Math.floor(game.map.camera.x * 32) + 16;
+                this.pos.y = Math.floor(game.map.camera.y * 18) + 15.5;
+                this.status = "doorEntered";
+            }
+            else {
+                game.map.enterDoor(game);
+                this.pos = game.map.lastOverWorldPosition;
+                this.pos.y += 0.1;
+                this.status = "doorEntered";
+                this.direction = "down";
+            }
+        }
+        if (this.damageColldownTimer == 0) {
+            this.checkEnemyCollision(game);
         }
         this.limitPosition(game, newPos);
-        this.updateMapCollision(game, newPos);
+        if (this.status != "enterDoor" && this.status != "doorEntered") {
+            this.updateMapCollision(game, newPos);
+        }
     }
     render(game) {
+        if (this.knockbackTimer > 0 && (this.knockbackTimer % 2 || this.knockbackTimer % 3)) {
+            return;
+        }
         var offset = new Vec2(game.map.camera.x * 32, game.map.camera.y * 18);
         var dir = 1;
         switch (this.direction) {
@@ -90,25 +132,48 @@ export class Player extends Entity {
         }
         //sprite
         var ani_x = Math.floor(this.animationTimer / 10);
-        game.draw.drawImage(this.sprite, new Vec2(((this.pos.x - offset.x) * game.tilesize) + game.globalPos.x, (this.pos.y - offset.y) * game.tilesize + +game.globalPos.y), new Vec2(game.tilesize, game.tilesize), new Vec2(ani_x + 1 + ani_x * 16, (dir * 16) + dir + 1), new Vec2(16, 16));
+        if (this.status == "attack") {
+            game.draw.drawImage(this.sprite, new Vec2(((this.pos.x - offset.x - 0.25) * game.tilesize) + game.globalPos.x, (this.pos.y - offset.y - 0.5) * game.tilesize + game.globalPos.y), new Vec2(game.tilesize, game.tilesize), new Vec2((4 * 16) + 4, (dir * 16) + dir + 1), new Vec2(16, 16));
+        }
+        else {
+            game.draw.drawImage(this.sprite, new Vec2(((this.pos.x - offset.x - 0.25) * game.tilesize) + game.globalPos.x, (this.pos.y - offset.y - 0.5) * game.tilesize + game.globalPos.y), new Vec2(game.tilesize, game.tilesize), new Vec2(ani_x + 1 + ani_x * 16, (dir * 16) + dir + 1), new Vec2(16, 16));
+        }
+        // const r = new Rect(new Vec2(this.pos.x * game.tilesize, this.pos.y * game.tilesize), new Vec2(this.dim.x * game.tilesize, this.dim.y * game.tilesize));
+        // r.pos.x += game.globalPos.x - (game.map.camera.x * 32 * game.tilesize);
+        // r.pos.y += game.globalPos.y - (game.map.camera.y * 18 * game.tilesize);
+        // game.draw.fillRect(r, 255, 0, 0,);
         //espada
         if (this.status == "attack") {
             var viewAttackArea = new Rect(new Vec2(((this.attackArea.pos.x - offset.x) * game.tilesize) + game.globalPos.x, ((this.attackArea.pos.y - offset.y) * game.tilesize) + game.globalPos.y), new Vec2(this.attackArea.dim.x * game.tilesize, this.attackArea.dim.y * game.tilesize));
-            game.draw.fillRect(viewAttackArea, 255, 0, 0);
+            game.draw.drawImage(this.sprite, viewAttackArea.pos, viewAttackArea.dim, new Vec2((5 * 16) + 4, (dir * 16) + dir + 1), new Vec2(16, 16));
+            //game.draw.fillRect(viewAttackArea, 255, 0, 0);
         }
     }
     getExperience(enemy) {
-        this.experience += 1 + Math.floor(Math.random() * 5);
+        var percent = Math.random();
+        percent = percent < 0.25 ? 0.25 : percent;
+        this.experience += 1 + Math.floor(percent * enemy.level);
+        if (this.experience >= this.ExpToLvlUp) {
+            this.experience -= this.ExpToLvlUp;
+            this.level++;
+            this.powerPoints += 3;
+            this.ExpToLvlUp += Math.floor(this.ExpToLvlUp / 2);
+        }
     }
     updateKeyboardInput(game, newPos) {
         //update position
         if (this.status == 'idle') {
-            if (!KeybordController.getKeyState(' ')) {
+            if (!KeybordController.getKeyState('k')) {
                 this.attackColldown = false;
             }
-            if (KeybordController.getKeyState(' ') && !this.attackColldown) {
+            if (KeybordController.getKeyState('k') && !this.attackColldown) {
                 this.status = "attack";
+                this.attackTimer = 15;
+            }
+            else if (KeybordController.getKeyPress('j') && !this.attackColldown && this.magic >= 5) {
+                this.status = "magic";
                 this.attackTimer = 10;
+                this.magic -= 5;
             }
             else if (KeybordController.getKeyState('w')) {
                 this.status = "walking";
@@ -125,6 +190,30 @@ export class Player extends Entity {
             else if (KeybordController.getKeyState('d')) {
                 this.status = "walking";
                 this.direction = "right";
+            }
+            if (KeybordController.getKeyPress('1')) {
+                this.inventory.blazeMedalion = true;
+                this.inventory.riverTunic = false;
+                this.inventory.blizardWisper = false;
+                this.inventory.ancientAmber = false;
+            }
+            else if (KeybordController.getKeyPress('2')) {
+                this.inventory.blazeMedalion = false;
+                this.inventory.riverTunic = true;
+                this.inventory.blizardWisper = false;
+                this.inventory.ancientAmber = false;
+            }
+            else if (KeybordController.getKeyPress('3')) {
+                this.inventory.blazeMedalion = false;
+                this.inventory.riverTunic = false;
+                this.inventory.blizardWisper = true;
+                this.inventory.ancientAmber = false;
+            }
+            else if (KeybordController.getKeyPress('4')) {
+                this.inventory.blazeMedalion = false;
+                this.inventory.riverTunic = false;
+                this.inventory.blizardWisper = false;
+                this.inventory.ancientAmber = true;
             }
         }
     }
@@ -148,16 +237,16 @@ export class Player extends Entity {
         //Attack
         var swordOffset;
         if (this.direction == "up") {
-            swordOffset = new Vec2(0, -1);
+            swordOffset = new Vec2(-0.25, -this.dim.y - 1);
         }
         else if (this.direction == "down") {
-            swordOffset = new Vec2(0, 1);
+            swordOffset = new Vec2(-0.25, this.dim.y);
         }
         else if (this.direction == "left") {
-            swordOffset = new Vec2(-1, 0);
+            swordOffset = new Vec2(-1.25, this.dim.y - 1);
         }
         else {
-            swordOffset = new Vec2(1, 0);
+            swordOffset = new Vec2(this.dim.x + 0.25, this.dim.y - 1);
         }
         this.attackArea = new Rect(new Vec2(this.pos.x + swordOffset.x, this.pos.y + swordOffset.y), new Vec2(1, 1));
         this.attackTimer--;
@@ -168,17 +257,19 @@ export class Player extends Entity {
     }
     updateKnockback(game, newPos) {
         this.knockbackTimer--;
-        if (this.direction == "left") {
-            newPos.x += 0.1;
-        }
-        else if (this.direction == "right") {
-            newPos.x -= 0.1;
-        }
-        else if (this.direction == "up") {
-            newPos.y += 0.1;
-        }
-        else {
-            newPos.y -= 0.1;
+        if (this.knockbackTimer > 0) {
+            if (this.direction == "left") {
+                newPos.x += 0.1;
+            }
+            else if (this.direction == "right") {
+                newPos.x -= 0.1;
+            }
+            else if (this.direction == "up") {
+                newPos.y += 0.1;
+            }
+            else {
+                newPos.y -= 0.1;
+            }
         }
         if (this.knockbackTimer == 0) {
             this.status = "idle";
@@ -198,16 +289,33 @@ export class Player extends Entity {
         if (newPos.y <= 0) {
             newPos.y = 0;
         }
+        if (this.status == "knockback") {
+            if (newPos.x + this.dim.x >= (game.map.camera.x + 1) * 32) {
+                newPos.x = ((game.map.camera.x + 1) * 32) - this.dim.x;
+            }
+            if (newPos.x < (game.map.camera.x) * 32) {
+                newPos.x = (game.map.camera.x * 32);
+            }
+            if (newPos.y + this.dim.y >= (game.map.camera.y + 1) * 18) {
+                newPos.y = ((game.map.camera.y + 1) * 18) - this.dim.y;
+            }
+            if (newPos.y < (game.map.camera.y) * 18) {
+                newPos.y = (game.map.camera.y * 18);
+            }
+        }
     }
-    checkEnemyCollison(game) {
+    checkEnemyCollision(game) {
         //verifica colisão com inimigo
         var r = new Rect(this.pos, this.dim);
-        for (var i = 0; i < game.map.enemys.length; i++) {
-            var enemy = game.map.enemys[i];
-            if (r.checkIntersect(new Rect(enemy.pos, enemy.dim))) {
+        for (var i = 0; i < game.enemys.length; i++) {
+            var enemy = game.enemys[i];
+            if (enemy.status == "jumping") {
+            }
+            else if (r.checkIntersect(new Rect(enemy.pos, enemy.dim))) {
                 this.status = "knockback";
                 this.life -= enemy.attack < this.defence ? 1 : enemy.attack - this.defence;
-                this.knockbackTimer = 10;
+                this.knockbackTimer = 20;
+                this.damageColldownTimer = 30;
                 if (Math.abs(this.pos.x - enemy.pos.x) > (Math.abs(this.pos.y - enemy.pos.y))) {
                     if (this.pos.x < enemy.pos.x) {
                         this.direction = "right";
@@ -228,37 +336,85 @@ export class Player extends Entity {
             }
         }
     }
+    checkMapColision(x, y, game) {
+        var tile = game.map.getTile(x, y);
+        if (tile == 146 || tile == 154 || tile == 48 || tile == 56) {
+            this.status = "enterDoor";
+            return false;
+        }
+        if (this.inventory.riverTunic) {
+            if (tile == 17 || tile == 18 || tile == 19 || tile == 33 || tile == 34 || tile == 35 || tile == 49 || tile == 50 || tile == 51 ||
+                tile == 25 || tile == 26 || tile == 27 || tile == 41 || tile == 42 || tile == 43 || tile == 57 || tile == 58 || tile == 59) {
+                return false;
+            }
+        }
+        if (tile != 16 && tile != 24 && tile != 162 && tile != 170 && tile != 7 && tile != 15 && tile != 36 && tile != 37 && tile != 38) {
+            return true;
+        }
+        return false;
+    }
     updateMapCollision(game, newPos) {
         //colisão
         var finalPos = new Vec2(newPos.x, newPos.y);
         //Para X
-        if (game.map.checkColision(newPos.x, this.pos.y)) {
+        if (this.checkMapColision(newPos.x, this.pos.y, game)) {
             finalPos.x = Math.floor(newPos.x) + 1;
         }
-        else if (game.map.checkColision(newPos.x, this.pos.y + 0.99)) {
+        else if (this.checkMapColision(newPos.x, this.pos.y + this.dim.y - 0.01, game)) {
             finalPos.x = Math.floor(newPos.x) + 1;
         }
-        else if (game.map.checkColision(newPos.x + 1, this.pos.y)) {
-            finalPos.x = Math.floor(newPos.x);
+        else if (this.checkMapColision(newPos.x + this.dim.x, this.pos.y, game)) {
+            finalPos.x = Math.floor(newPos.x) + (1 - this.dim.x);
         }
-        else if (game.map.checkColision(newPos.x + 1, this.pos.y + 0.99)) {
-            finalPos.x = Math.floor(newPos.x);
+        else if (this.checkMapColision(newPos.x + this.dim.x, this.pos.y + this.dim.y - 0.01, game)) {
+            finalPos.x = Math.floor(newPos.x) + (1 - this.dim.x);
         }
         //Para Y
-        if (game.map.checkColision(finalPos.x, newPos.y)) {
+        if (this.checkMapColision(finalPos.x, newPos.y, game)) {
             finalPos.y = Math.floor(newPos.y) + 1;
         }
-        else if (game.map.checkColision(finalPos.x + 0.99, newPos.y)) {
+        else if (this.checkMapColision(finalPos.x + this.dim.x - 0.01, newPos.y, game)) {
             finalPos.y = Math.floor(newPos.y) + 1;
         }
-        else if (game.map.checkColision(finalPos.x, newPos.y + 1)) {
-            finalPos.y = Math.floor(newPos.y);
+        else if (this.checkMapColision(finalPos.x, newPos.y + this.dim.y, game)) {
+            finalPos.y = Math.floor(newPos.y) + (1 - this.dim.y);
         }
-        else if (game.map.checkColision(finalPos.x + 0.99, newPos.y + 1)) {
-            finalPos.y = Math.floor(newPos.y);
+        else if (this.checkMapColision(finalPos.x + this.dim.x - 0.01, newPos.y + this.dim.y, game)) {
+            finalPos.y = Math.floor(newPos.y) + (1 - this.dim.y);
         }
         if (this.status != "scrolling") {
             this.pos = finalPos;
+        }
+    }
+    updateMagic(game) {
+        if (this.attackTimer == 10) {
+            this.attackTimer--;
+            if (this.direction == "right") {
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x + 0.5, this.pos.y), new Vec2(10, 10), new Vec2(0.2, 0), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x + 0.5, this.pos.y), new Vec2(10, 10), new Vec2(0.2, -0.1), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x + 0.5, this.pos.y), new Vec2(10, 10), new Vec2(0.2, 0.1), 50));
+            }
+            else if (this.direction == "left") {
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x - 0.5, this.pos.y), new Vec2(10, 10), new Vec2(-0.2, 0), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x - 0.5, this.pos.y), new Vec2(10, 10), new Vec2(-0.2, -0.1), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x - 0.5, this.pos.y), new Vec2(10, 10), new Vec2(-0.2, 0.1), 50));
+            }
+            else if (this.direction == "up") {
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(0, -0.2), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(0.1, -0.2), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(-0.1, -0.2), 50));
+            }
+            if (this.direction == "down") {
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(0, 0.2), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(0.1, 0.2), 50));
+                game.playerProjectiles.push(new Particle(new Vec2(this.pos.x, this.pos.y), new Vec2(10, 10), new Vec2(-0.1, 0.2), 50));
+            }
+        }
+        else if (this.attackTimer > 0) {
+            this.attackTimer--;
+        }
+        else {
+            this.status = "idle";
         }
     }
 }

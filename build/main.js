@@ -3,8 +3,7 @@ import { Module } from "../libopenmpt.js";
 import { ChiptuneJsConfig, ChiptuneJsPlayer } from "../chiptune2.js";
 window.libopenmpt = Module;
 window.libopenmpt.locateFile = function (filename) {
-    console.log("/" + filename);
-    return "/" + filename;
+    return "./" + filename;
 };
 window.libopenmpt.onRuntimeInitialized = function () {
     setTimeout(() => {
@@ -14,7 +13,7 @@ window.libopenmpt.onRuntimeInitialized = function () {
 };
 var player;
 function onLoad(buffer) {
-    player.play(buffer);
+    //player.play(buffer);
     console.log(player.metadata());
 }
 function init() {

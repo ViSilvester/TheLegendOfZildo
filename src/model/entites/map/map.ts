@@ -3,32 +3,36 @@ import { Entity } from "../../engine/entity.js";
 import { Vec2 } from "../../engine/geometry.js";
 import { Game } from "../../game/game.js";
 import { Enemy } from "../enemy/enemy.js";
+import { Player } from "../player/player.js";
 
 
 export class GameMap extends Entity {
 
     tileset!: ImageBitmap;
-    enemtySprites!: ImageBitmap;
-    map!: Array<number>;
+    currentMap!: Array<number>;
+    overworldMap!: Array<number>;
+    innerAreasMap!: Array<number>;
+    overworldEnemyAreasMap!: Array<number>;
     width!: number;
     heigh!: number;
-    enemys: Array<Enemy>;
-    camera = new Vec2(0, 0);
+    camera: Vec2;
+    lastOverWorldPosition = new Vec2(0, 0);
 
     constructor(cameraPos: Vec2) {
         super();
         this.camera = cameraPos;
-        this.enemys = [];
     }
 
     async create(): Promise<void> {
 
-        this.tileset = await EzIO.loadImageFromUrl("../../../../assets/tileset.png");
-        this.enemtySprites = await EzIO.loadImageFromUrl("../../../../assets/enemy.png");
-        var obj = await EzIO.loadJsonFromUrl("../../../../assets/main_map.json");
+        this.tileset = await EzIO.loadImageFromUrl("./assets/tileset_01.png");
+        var obj = await EzIO.loadJsonFromUrl("./assets/main_map.json");
         this.width = obj.width;
         this.heigh = obj.heigh;
-        this.map = obj.layers[0].data;
+        this.overworldMap = obj.layers[0].data;
+        this.innerAreasMap = obj.layers[1].data;
+        this.overworldEnemyAreasMap = obj.layers[2].data;
+        this.currentMap = this.overworldMap;
 
     }
     update(game: Game): void {
@@ -53,31 +57,28 @@ export class GameMap extends Entity {
                     ),
                     new Vec2(game.tilesize, game.tilesize),
                     new Vec2(
-                        (tile % 6) * 8,
-                        Math.floor(tile / 6) * 8
+                        (tile % 16) * 16,
+                        Math.floor(tile / 16) * 16
                     ),
-                    new Vec2(8, 8)
+                    new Vec2(16, 16)
                 )
             }
         }
-
-        // render enemys
-        for (var i = 0; i < this.enemys.length; i++) {
-            this.enemys[i].render(game);
-        }
-
-
     }
 
     getTile(x: number, y: number): number {
-        return this.map[(Math.floor(y) * this.width) + Math.floor(x)] - 1;
+        return this.currentMap[(Math.floor(y) * this.width) + Math.floor(x)] - 1;
+    }
+
+    getAreaTile(x: number, y: number): number {
+        return this.overworldEnemyAreasMap[(Math.floor(y) * this.width) + Math.floor(x)] - 1;
     }
 
     checkColision(x: number, y: number) {
 
         var tile = this.getTile(x, y);
 
-        if (tile != 6 && tile != 12) {
+        if (tile != 16 && tile != 24) {
             return true;
         }
 
@@ -89,29 +90,31 @@ export class GameMap extends Entity {
 
         // update camera  
 
-        if (game.player.direction == "right" && game.player.status != "scrolling" && game.player.pos.x > (this.camera.x + 1) * 32) {
-            game.player.status = "scrolling"
-        }
-        if (game.player.direction == "left" && game.player.status != "scrolling" && game.player.pos.x + 1 <= this.camera.x * 32) {
-            game.player.status = "scrolling"
-        }
-        if (game.player.direction == "down" && game.player.status != "scrolling" && game.player.pos.y > (this.camera.y + 1) * 18) {
-            game.player.status = "scrolling"
-        }
-        if (game.player.direction == "up" && game.player.status != "scrolling" && game.player.pos.y + 1 <= this.camera.y * 18) {
-            game.player.status = "scrolling"
-        }
+        if ((game.player.direction == "right" && game.player.status != "scrolling" && game.player.pos.x > (this.camera.x + 1) * 32) ||
+            (game.player.direction == "left" && game.player.status != "scrolling" && game.player.pos.x + 1 <= this.camera.x * 32) ||
+            (game.player.direction == "down" && game.player.status != "scrolling" && game.player.pos.y > (this.camera.y + 1) * 18) ||
+            (game.player.direction == "up" && game.player.status != "scrolling" && game.player.pos.y + 1 <= this.camera.y * 18)) {
 
+            game.player.status = "scrolling"
+
+            game.mapCoordMemory.push(new Vec2(this.camera.x, this.camera.y));
+            game.mapEnemyMemory.push(game.enemys.length);
+
+            if (game.mapEnemyMemory.length > 6) {
+                game.mapCoordMemory.splice(0, 1);
+                game.mapEnemyMemory.splice(0, 1);
+            }
+
+        }
 
         if (game.player.status == "scrolling") {
-
             switch (game.player.direction) {
                 case "right":
                     this.camera.x += 0.025;
                     if (Math.floor(game.player.pos.x) == Math.floor(this.camera.x * 32)) {
                         game.player.status = 'idle';
                         this.camera.x = Math.floor(this.camera.x);
-                        this.updateEnemySpawn(game);
+                        game.enemySpawn();
                     }
                     break;
                 case "left":
@@ -119,7 +122,7 @@ export class GameMap extends Entity {
                     if (Math.floor(game.player.pos.x + 2) == Math.floor((this.camera.x + 1) * 32)) {
                         game.player.status = 'idle';
                         this.camera.x = Math.floor(this.camera.x);
-                        this.updateEnemySpawn(game);
+                        game.enemySpawn();
                     }
                     break;
                 case "down":
@@ -127,7 +130,7 @@ export class GameMap extends Entity {
                     if (Math.floor(game.player.pos.y) == Math.floor(this.camera.y * 18)) {
                         game.player.status = 'idle';
                         this.camera.y = Math.floor(this.camera.y);
-                        this.updateEnemySpawn(game);
+                        game.enemySpawn();
                     }
                     break;
                 case "up":
@@ -135,58 +138,25 @@ export class GameMap extends Entity {
                     if (Math.floor(game.player.pos.y + 2) == Math.floor((this.camera.y + 1) * 18)) {
                         game.player.status = 'idle';
                         this.camera.y = Math.floor(this.camera.y);
-                        this.updateEnemySpawn(game);
+                        game.enemySpawn();
                     }
                     break;
             }
         }
+    }
+
+    enterDoor(game: Game) {
+
+        if (this.currentMap == this.overworldMap) {
+            this.currentMap = this.innerAreasMap;
+            this.lastOverWorldPosition.x = game.player.pos.x;
+            this.lastOverWorldPosition.y = game.player.pos.y;
+            game.enemys = []
+        }
         else {
-            this.updateEnemys(game);
-        }
-    }
-
-    private updateEnemySpawn(game: Game) {
-
-        this.enemys = [];
-
-        // Pega posições em que inimigos podem spawnar
-        var offset = new Vec2(
-            this.camera.x * 32,
-            this.camera.y * 18,
-        );
-
-        var availablePositions: Array<Vec2> = [];
-
-        for (var i = offset.x; i < offset.x + 32; i++) {
-            for (var j = offset.y; j < offset.y + 18; j++) {
-
-                if ((!this.checkColision(i, j)) &&
-                    i != Math.floor(game.player.pos.x) &&
-                    j != Math.floor(game.player.pos.y)) {
-
-                    availablePositions.push(new Vec2(i, j));
-                }
-            }
+            this.currentMap = this.overworldMap;
+            game.enemys = []
         }
 
-        // Spawna 5 inimigos
-
-        for (i = 0; i < 5; i++) {
-            var pos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
-            this.enemys.push(
-                new Enemy(this.enemtySprites, pos, 15, 10, 1, 5, 1)
-            );
-        }
-    }
-
-    private updateEnemys(game: Game) {
-        for (var i = 0; i < this.enemys.length; i++) {
-            this.enemys[i].update(game);
-
-            if (this.enemys[i].status == "dead") {
-                this.enemys.splice(i, 1);
-                i--;
-            }
-        }
     }
 }
