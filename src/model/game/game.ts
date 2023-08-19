@@ -7,12 +7,11 @@ import { Enemy } from "../entites/enemy/enemy.js";
 import { GameMap } from "../entites/map/map.js";
 import { Player } from "../entites/player/player.js";
 import { EnemyFactory } from "../factory/enemyFactory/enemyFactory.js";
-import { Inventory } from "../inventory/inventory.js";
 import { Particle } from "../particle/particle.js";
 
 export class Game extends Engine {
 
-    status = "inGame";
+    status = "title";
     tilesize: number;
     player: Player;
     map!: GameMap;
@@ -25,6 +24,9 @@ export class Game extends Engine {
     soundController: SoundController;
     ui_texture!: ImageBitmap;
     projectiletexture!: ImageBitmap;
+    title_timer: number;
+    title_screen!: ImageBitmap;
+    blink_timer = 0;
 
     constructor() {
         super('canvas');
@@ -47,6 +49,8 @@ export class Game extends Engine {
         this.enemyFactory = new EnemyFactory();
         this.mapEnemyMemory = [];
         this.mapCoordMemory = [];
+        this.title_timer = 100;
+
     }
 
     async create() {
@@ -56,13 +60,34 @@ export class Game extends Engine {
         await this.enemyFactory.createFactory();
         this.ui_texture = await EzIO.loadImageFromUrl("./assets/ui_elements.png");
         this.projectiletexture = await EzIO.loadImageFromUrl("./assets/projectiles.png");
+        this.title_screen = await EzIO.loadImageFromUrl("./assets/title_screen.png");
     }
 
     update(): void {
 
+        if (!this.soundController.isPlaying) {
+            this.soundController.play();
+        }
+
         //keyboard input
         this.updateKeyboardInput()
 
+        if (this.status == "title") {
+
+            if (navigator.userActivation.hasBeenActive) {
+                this.title_timer--;
+                this.blink_timer = 40;
+                if (this.title_timer == 0) {
+                    this.status = "inGame";
+                }
+            }
+            else {
+                this.blink_timer++;
+                if (this.blink_timer == 40) {
+                    this.blink_timer = 0;
+                }
+            }
+        }
         if (this.status == "inGame") {
             this.player.update(this);
             this.map.update(this);
@@ -76,16 +101,27 @@ export class Game extends Engine {
 
     render(): void {
 
-        if (this.status == "inGame") {
+        if (this.status == "title") {
+            this.draw.fillBackgroudColor(0, 0, 0);
+            this.draw.drawImage(
+                this.title_screen,
+                new Vec2(0, this.globalPos.y / 2),
+                new Vec2(this.tilesize * 32, this.tilesize * 18),
+                new Vec2(0, 0),
+                new Vec2(512, 288)
+            );
+            if (this.blink_timer < 25) {
+                this.drawTextLine("CLICK TO START NEW GAME", new Vec2(this.tilesize * 10, this.tilesize * 22))
+            }
+
+        }
+        else if (this.status == "inGame") {
             this.draw.fillBackgroudColor(0, 0, 0);
             this.map.render(this);
             this.renderEnemys();
             this.player.render(this);
             this.renderPlayerProjectiles();
             this.player.inventory.renderStatusBar(this);
-
-
-
         }
         else if (this.status == "inventory") {
             this.draw.fillBackgroudColor(0, 0, 0);

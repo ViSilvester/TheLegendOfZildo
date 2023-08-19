@@ -110,9 +110,11 @@ export class GameMap extends Entity {
             this.lastOverWorldPosition.x = game.player.pos.x;
             this.lastOverWorldPosition.y = game.player.pos.y;
             game.enemys = [];
+            game.soundController.pause();
         }
         else {
             this.currentMap = this.overworldMap;
+            game.soundController.play();
             game.enemys = [];
         }
     }

@@ -216,14 +216,13 @@ export class Player extends Entity {
 
     getExperience(enemy: Enemy) {
         var percent = Math.random();
-        percent = percent < 0.25 ? 0.25 : percent;
-        this.experience += 1 + Math.floor(percent * enemy.level);
+        this.experience += enemy.level + Math.floor(Math.random() * enemy.level);
 
         if (this.experience >= this.ExpToLvlUp) {
             this.experience -= this.ExpToLvlUp;
             this.level++;
             this.powerPoints += 3;
-            this.ExpToLvlUp += Math.floor(this.ExpToLvlUp / 2);
+            this.ExpToLvlUp += Math.floor(this.ExpToLvlUp / 4);
         }
     }
 

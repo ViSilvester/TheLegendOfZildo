@@ -28,12 +28,12 @@ export class EnemyFactory {
         percent = percent > 0.5 ? 0.5 : percent;
         percent = percent < 0.35 ? 0.35 : percent;
 
-        const life = Math.floor(points * percent);
+        const life = Math.floor(points * percent) * 2;
 
         percent = percent > 0.5 ? 0.5 : percent;
         percent = percent < 0.35 ? 0.35 : percent;
 
-        const attack = Math.floor((points - life) * percent);
+        const attack = Math.floor((points - life) * percent) * 4;
         const defence = points - attack - life;
 
         if (!area) {

@@ -15,11 +15,14 @@ export class Frog extends Enemy {
 
     render(game: Game): void {
 
-        if (this.damageCooldownTimer > 0 &&
-            (this.damageCooldownTimer % 2 == 0 || this.damageCooldownTimer % 3 == 0)) {
+        if (this.status == "knockback") {
+            if (this.knockbackTimer > 0 && (this.knockbackTimer % 2 == 0 || this.knockbackTimer % 3 == 0)) {
+                return;
+            }
+        }
+        else if (this.damageCooldownTimer > 0 && (this.damageCooldownTimer % 2 == 0 || this.damageCooldownTimer % 3 == 0)) {
             return;
         }
-
 
         var offset = new Vec2(game.map.camera.x * 32, game.map.camera.y * 18);
         var fpos = new Vec2(
