@@ -15,7 +15,7 @@ export class SoundController {
     }
     loadSounds() {
         return __awaiter(this, void 0, void 0, function* () {
-            var buffer = yield EzIO.loadArrayBufferFromUrl("./assets/overworld.ogg");
+            var buffer = yield EzIO.loadArrayBufferFromUrl("./assets/sound/bgm/overworld.ogg");
             this.audioCtx.decodeAudioData(buffer, (data) => { this.overworld = data; });
         });
     }

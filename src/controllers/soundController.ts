@@ -16,7 +16,7 @@ export class SoundController {
     }
 
     async loadSounds() {
-        var buffer = await EzIO.loadArrayBufferFromUrl("./assets/overworld.ogg");
+        var buffer = await EzIO.loadArrayBufferFromUrl("./assets/sound/bgm/overworld.ogg");
         this.audioCtx.decodeAudioData(buffer, (data) => { this.overworld = data });
     }
 

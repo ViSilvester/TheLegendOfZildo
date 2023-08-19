@@ -25,8 +25,8 @@ export class GameMap extends Entity {
 
     async create(): Promise<void> {
 
-        this.tileset = await EzIO.loadImageFromUrl("./assets/tileset_01.png");
-        var obj = await EzIO.loadJsonFromUrl("./assets/main_map.json");
+        this.tileset = await EzIO.loadImageFromUrl("./assets/img/tileset_01.png");
+        var obj = await EzIO.loadJsonFromUrl("./data/main_map.json");
         this.width = obj.width;
         this.heigh = obj.heigh;
         this.overworldMap = obj.layers[0].data;

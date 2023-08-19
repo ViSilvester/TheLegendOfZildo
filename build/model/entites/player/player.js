@@ -49,7 +49,7 @@ export class Player extends Entity {
     }
     create() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.sprite = yield EzIO.loadImageFromUrl("./assets/char.png");
+            this.sprite = yield EzIO.loadImageFromUrl("./assets/img/char.png");
         });
     }
     update(game) {

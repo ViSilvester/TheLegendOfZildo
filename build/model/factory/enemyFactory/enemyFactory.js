@@ -16,10 +16,10 @@ export class EnemyFactory {
     }
     createFactory() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/enemy.png"));
-            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/frog.png"));
-            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/spider.png"));
-            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/crawler.png"));
+            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/img/enemy.png"));
+            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/img/frog.png"));
+            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/img/spider.png"));
+            this.sprites.push(yield EzIO.loadImageFromUrl("./assets/img/crawler.png"));
         });
     }
     createEnemy(pos, lvl, area) {

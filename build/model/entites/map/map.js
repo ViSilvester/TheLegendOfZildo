@@ -18,8 +18,8 @@ export class GameMap extends Entity {
     }
     create() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.tileset = yield EzIO.loadImageFromUrl("./assets/tileset_01.png");
-            var obj = yield EzIO.loadJsonFromUrl("./assets/main_map.json");
+            this.tileset = yield EzIO.loadImageFromUrl("./assets/img/tileset_01.png");
+            var obj = yield EzIO.loadJsonFromUrl("./data/main_map.json");
             this.width = obj.width;
             this.heigh = obj.heigh;
             this.overworldMap = obj.layers[0].data;

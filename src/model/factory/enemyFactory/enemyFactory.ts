@@ -8,10 +8,10 @@ export class EnemyFactory {
     sprites: Array<ImageBitmap> = [];
 
     async createFactory() {
-        this.sprites.push(await EzIO.loadImageFromUrl("./assets/enemy.png"));
-        this.sprites.push(await EzIO.loadImageFromUrl("./assets/frog.png"));
-        this.sprites.push(await EzIO.loadImageFromUrl("./assets/spider.png"));
-        this.sprites.push(await EzIO.loadImageFromUrl("./assets/crawler.png"))
+        this.sprites.push(await EzIO.loadImageFromUrl("./assets/img/enemy.png"));
+        this.sprites.push(await EzIO.loadImageFromUrl("./assets/img/frog.png"));
+        this.sprites.push(await EzIO.loadImageFromUrl("./assets/img/spider.png"));
+        this.sprites.push(await EzIO.loadImageFromUrl("./assets/img/crawler.png"))
     }
 
     createEnemy(pos: Vec2, lvl: number, area?: number) {

@@ -58,9 +58,9 @@ export class Game extends Engine {
         await this.player.create();
         await this.soundController.loadSounds();
         await this.enemyFactory.createFactory();
-        this.ui_texture = await EzIO.loadImageFromUrl("./assets/ui_elements.png");
-        this.projectiletexture = await EzIO.loadImageFromUrl("./assets/projectiles.png");
-        this.title_screen = await EzIO.loadImageFromUrl("./assets/title_screen.png");
+        this.ui_texture = await EzIO.loadImageFromUrl("./assets/img/ui_elements.png");
+        this.projectiletexture = await EzIO.loadImageFromUrl("./assets/img/projectiles.png");
+        this.title_screen = await EzIO.loadImageFromUrl("./assets/img/title_screen.png");
     }
 
     update(): void {

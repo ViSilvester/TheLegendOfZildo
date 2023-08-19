@@ -55,7 +55,7 @@ export class Player extends Entity {
     }
 
     async create(): Promise<void> {
-        this.sprite = await EzIO.loadImageFromUrl("./assets/char.png");
+        this.sprite = await EzIO.loadImageFromUrl("./assets/img/char.png");
     }
 
     update(game: Game): void {

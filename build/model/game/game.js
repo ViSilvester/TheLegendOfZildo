@@ -43,9 +43,9 @@ export class Game extends Engine {
             yield this.player.create();
             yield this.soundController.loadSounds();
             yield this.enemyFactory.createFactory();
-            this.ui_texture = yield EzIO.loadImageFromUrl("./assets/ui_elements.png");
-            this.projectiletexture = yield EzIO.loadImageFromUrl("./assets/projectiles.png");
-            this.title_screen = yield EzIO.loadImageFromUrl("./assets/title_screen.png");
+            this.ui_texture = yield EzIO.loadImageFromUrl("./assets/img/ui_elements.png");
+            this.projectiletexture = yield EzIO.loadImageFromUrl("./assets/img/projectiles.png");
+            this.title_screen = yield EzIO.loadImageFromUrl("./assets/img/title_screen.png");
         });
     }
     update() {
